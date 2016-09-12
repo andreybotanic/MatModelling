@@ -2,6 +2,9 @@
 
 #include <windows.h>
 #include <windowsx.h>
+#include <gdiplus.h>
+#pragma comment (lib,"Gdiplus.lib")
+using namespace Gdiplus;
 
 struct WNDINFO {
 	HWND hwnd;
@@ -14,26 +17,27 @@ struct WNDINFO {
 
 class Window {
 private:
-	WNDINFO wndinfo;
-	HPEN pen;
-	HBRUSH brush;
-	HBRUSH back;
-	COLORREF color;
+	HWND hwnd;
+	RECT rt;
+	LONG width, height;
+	Gdiplus::Color color;
+	ULONG_PTR gdiplusToken;
+	bool isCreated = false;
+	Bitmap *bmp = new Bitmap(0, 0);
+	Gdiplus::Graphics *g_buffer;
 	//
-	void (*OnResize)(Window wnd, WNDINFO _wndinfo) = NULL;
+	void (*OnResize)(Window wnd) = NULL;
 	//
 	static LRESULT CALLBACK StaticWindowProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam);
 	static LRESULT CALLBACK InitialWindowProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam);
 	LRESULT CALLBACK WindowProc(UINT Msg, WPARAM wParam, LPARAM lParam);
-	void InitGDI();
+	void ReinitGDI();
 public:
-	Window(HINSTANCE hInstance, int nCmdShow, int width, int height, char className[] = "myWindowClass");
-	void OnResizeFunction(void(*_OnResize)(Window, WNDINFO));
-	void SetPen(HPEN _pen);
-	HPEN GetPen();
-	void SetBrush(HBRUSH _brush);
-	HBRUSH GetBrush();
-	void SetBackground(COLORREF _color);
-	COLORREF GetBackground();
-	void Clear();
+	Gdiplus::Graphics *g;
+	Window(HINSTANCE hInstance, int nCmdShow, int width, int height, Gdiplus::Color color, char className[] = "myWindowClass");
+	void OnResizeFunction(void(*_OnResize)(Window));
+	void SetBackground(Color _color);
+	Color GetBackground();
+	inline REAL Width() { return width; };
+	inline REAL Height() { return height; };
 };

@@ -1,22 +1,20 @@
-#include <windows.h>
-#include <windowsx.h>
 #include "window.h"
 #include <string>
-#include <gdiplus.h>
 
-using namespace Gdiplus;
-
-HPEN axisPen, f1Pen, f2Pen;
-HBRUSH axisBr;
-POINT axisArrow[3];
-HFONT font;
-RECT txtPos;
-char text[5];
+Pen *axisPen, *f1Pen, *f2Pen, *f3Pen, *f4Pen;
+SolidBrush *axisBr;
+PointF axisArrow[3];
+Font *font;
+StringFormat *sf;
+RectF txtPos;
+WCHAR text[5];
 int num_step;
 int min_x = 10, min_y = 5, cnt_x, cnt_y;
-int xO, yO;
+float xO, yO;
 float scale = 20;
-int pointsPerStep = 10;
+int pointsPerStep = 2;
+
+Pen *p;
 
 float F1(float x) {
 	return sin(x);
@@ -26,45 +24,49 @@ float F2(float x) {
 	return cos(x);
 }
 
-void drawFunc(Window wnd, WNDINFO wndinfo, float (*func)(float), HPEN pen) {
-	wnd.SetPen(pen);
-	float x = 0, y = func(0);
+float F3(float x) {
+	return -cos(x);
+}
+
+float F4(float x) {
+	return -sin(x);
+}
+
+void drawFunc(Window wnd, float (*func)(float), Pen *pen) {
+	float x = 0, y = func(0), x_old = x, y_old = y;
 	float dx = pointsPerStep / scale / num_step;
-	MoveToEx(wndinfo.buffer_dc, xO + x * scale, yO - y * scale, NULL);
 	do {
+		x_old = x;
+		y_old = y;
 		x += dx;
 		y = func(x);
-		LineTo(wndinfo.buffer_dc, xO + x * scale, yO - y * scale);
-	} while (xO + x * scale <= wndinfo.width);
+		wnd.g->DrawLine(pen, xO + x_old * scale, yO - y_old * scale, xO + x * scale, yO - y * scale);
+	} while (xO + x * scale <= wnd.Width());
 	x = 0;
 	y = func(0);
-	MoveToEx(wndinfo.buffer_dc, xO + x * scale, yO - y * scale, NULL);
 	do {
+		x_old = x;
+		y_old = y;
 		x -= dx;
 		y = func(x);
-		LineTo(wndinfo.buffer_dc, xO + x * scale, yO - y * scale);
+		wnd.g->DrawLine(pen, xO + x_old * scale, yO - y_old * scale, xO + x * scale, yO - y * scale);
 	} while (xO + x * scale >= 0);
 }
 
-void drawAxis(Window wnd, WNDINFO wndinfo) {
-	wnd.SetPen(axisPen);
-	wnd.SetBrush(axisBr);
-	xO = wndinfo.width / 2;
-	yO = wndinfo.height / 2;
+void drawAxis(Window wnd) {
+	xO = wnd.Width() / 2;
+	yO = wnd.Height() / 2;
 
-	MoveToEx(wndinfo.buffer_dc, 10, yO, NULL);
-	LineTo(wndinfo.buffer_dc, wndinfo.width - 10, yO);
-	MoveToEx(wndinfo.buffer_dc, xO, 10, NULL);
-	LineTo(wndinfo.buffer_dc, xO, wndinfo.height - 10);
-
+	wnd.g->DrawLine(axisPen, 10., yO, wnd.Width() - 10., yO);
+	wnd.g->DrawLine(axisPen, xO, 10., xO, wnd.Height() - 10.);
 	axisArrow[0] = { xO, 10 };
 	axisArrow[1] = { xO + 3, 20 };
 	axisArrow[2] = { xO - 3, 20 };
-	Polygon(wndinfo.buffer_dc, axisArrow, 3);
-	axisArrow[0] = { wndinfo.width - 10, yO };
-	axisArrow[1] = { wndinfo.width - 20, yO + 3 };
-	axisArrow[2] = { wndinfo.width - 20, yO  - 3};
-	Polygon(wndinfo.buffer_dc, axisArrow, 3);
+	wnd.g->FillPolygon(axisBr, axisArrow, 3);
+	axisArrow[0] = { wnd.Width() - 10, yO };
+	axisArrow[1] = { wnd.Width() - 20, yO + 3 };
+	axisArrow[2] = { wnd.Width() - 20, yO  - 3};
+	wnd.g->FillPolygon(axisBr, axisArrow, 3);
 
 	float px_step = 20;
 	num_step = 1;
@@ -78,66 +80,63 @@ void drawAxis(Window wnd, WNDINFO wndinfo) {
 	if (!px_step) {
 		px_step = 1;
 	}
-	cnt_x = (wndinfo.width - 42) / 2 / px_step, cnt_y = (wndinfo.height - 42) / 2 / px_step;
+	cnt_x = (wnd.Width() - 42) / 2 / px_step, cnt_y = (wnd.Height() - 42) / 2 / px_step;
 	if (min_x % num_step == 0 && cnt_x * num_step < min_x) {
 		cnt_x++;
 	}
 	if (min_y % num_step == 0 && cnt_y * num_step < min_y) {
 		cnt_y++;
 	}
-	SelectObject(wndinfo.buffer_dc, font);
-	txtPos.top = yO + 5;
-	txtPos.bottom = yO + 15;
+	txtPos.Y = yO + 5;
+	txtPos.Height = 10;
+	txtPos.Width = 20;
 	for (int i = 1; i <= cnt_x; i++) {
-		MoveToEx(wndinfo.buffer_dc, xO + px_step * i, yO - 3, NULL);
-		LineTo(wndinfo.buffer_dc, xO + px_step * i, yO + 4);
-		MoveToEx(wndinfo.buffer_dc, xO - px_step * i, yO - 3, NULL);
-		LineTo(wndinfo.buffer_dc, xO - px_step * i, yO + 4);
-		txtPos.left = xO + px_step * i - 10;
-		txtPos.right = xO + px_step * i + 10;
-		_itoa_s(i * num_step, text, 5, 10);
-		DrawText(wndinfo.buffer_dc, text, strlen(text), &txtPos, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
-		txtPos.left = xO - px_step * i - 10;
-		txtPos.right = xO - px_step * i + 10;
-		_itoa_s((-i) * num_step, text, 5, 10);
-		DrawText(wndinfo.buffer_dc, text, strlen(text), &txtPos, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
+		wnd.g->DrawLine(axisPen, xO + px_step * i, yO - 4, xO + px_step * i, yO + 4);
+		wnd.g->DrawLine(axisPen, xO - px_step * i, yO - 4, xO - px_step * i, yO + 4);
+		txtPos.X = xO + px_step * i - 10;
+		swprintf_s(text, 5, L"%d", i * num_step);
+		wnd.g->DrawString(text, lstrlenW(text), font, txtPos, sf, axisBr);
+		txtPos.X = xO - px_step * i - 10;
+		swprintf_s(text, 5, L"%d", -i * num_step);
+		wnd.g->DrawString(text, lstrlenW(text), font, txtPos, sf, axisBr);
 	}
-	txtPos.left = xO + 5;
-	txtPos.right = xO + 15;
+	txtPos.X = xO + 5;
 	for (int i = 1; i <= cnt_y; i++) {
-		MoveToEx(wndinfo.buffer_dc, xO - 3, yO + px_step * i, NULL);
-		LineTo(wndinfo.buffer_dc, xO + 4, yO + px_step * i);
-		MoveToEx(wndinfo.buffer_dc, xO - 3, yO - px_step * i, NULL);
-		LineTo(wndinfo.buffer_dc, xO + 4, yO - px_step * i);
-		txtPos.top = yO + px_step * i + 5;
-		txtPos.bottom = yO +px_step * i - 5;
-		_itoa_s((-i) * num_step, text, 5, 10);
-		DrawText(wndinfo.buffer_dc, text, strlen(text), &txtPos, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
-		txtPos.top = yO - px_step * i + 5;
-		txtPos.bottom = yO - px_step * i - 5;
-		_itoa_s(i * num_step, text, 5, 10);
-		DrawText(wndinfo.buffer_dc, text, strlen(text), &txtPos, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
+		wnd.g->DrawLine(axisPen, xO - 4, yO + px_step * i, xO + 4, yO + px_step * i);
+		wnd.g->DrawLine(axisPen, xO - 4, yO - px_step * i, xO + 4, yO - px_step * i);
+		txtPos.Y = yO + px_step * i - 5;
+		swprintf_s(text, 5, L"%d", -i * num_step);
+		wnd.g->DrawString(text, lstrlenW(text), font, txtPos, sf, axisBr);
+		txtPos.Y = yO - px_step * i - 5;
+		swprintf_s(text, 5, L"%d", i * num_step);
+		wnd.g->DrawString(text, lstrlenW(text), font, txtPos, sf, axisBr);
 	}
 }
 
-void resize(Window wnd, WNDINFO wndinfo) {
-	scale = min((float)(wndinfo.width - 42) / 2 / min_x, (float)(wndinfo.height - 42) / 2 / min_y);
-	wnd.Clear();
-	drawAxis(wnd, wndinfo);
-	drawFunc(wnd, wndinfo, F1, f1Pen);
-	drawFunc(wnd, wndinfo, F2, f2Pen);
+void resize(Window wnd) {
+	scale = min((float)(wnd.Width() - 42) / 2 / min_x, (float)(wnd.Height() - 42) / 2 / min_y);
+	drawAxis(wnd);
+	drawFunc(wnd, F1, f1Pen);
+	drawFunc(wnd, F2, f2Pen);
+	drawFunc(wnd, F3, f3Pen);
+	drawFunc(wnd, F4, f4Pen);
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR lpCmdLine, int nCmdShow) {
 	MSG Msg;
-	Window myWindow(hInstance, nCmdShow, 300, 300);
+	Window myWindow(hInstance, nCmdShow, 300, 300, Color(255, 255, 255));
+	p = new Pen(Color(255, 0, 0), 2);
+	axisPen = new Pen(Color(0, 0, 0), 1);
+	f1Pen = new Pen(Color(255, 0, 0), 2);
+	f2Pen = new Pen(Color(0, 0, 255), 2);
+	f3Pen = new Pen(Color(0, 128, 0), 2);
+	f4Pen = new Pen(Color(255, 128, 0), 2);
+	axisBr = new SolidBrush(Color(0, 0, 0));
+	FontFamily fontFamily(L"Arial");
+	font = new Font(&fontFamily, 9, FontStyleRegular, UnitPixel);
+	sf = new StringFormat(0, 0);
+	sf->SetAlignment(StringAlignmentCenter);
 
-	axisPen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
-	f1Pen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
-	f2Pen = CreatePen(PS_SOLID, 1, RGB(0, 0, 255));
-	axisBr = CreateSolidBrush(RGB(0, 0, 0));
-	font = CreateFont(12, 0, 0, 0, 0, 0, 0, 0, DEFAULT_CHARSET, 0, 0, 0, 0, "Arial");
-	myWindow.SetBackground(RGB(255, 255, 255));
 	myWindow.OnResizeFunction(resize);
 
 	while (GetMessage(&Msg, NULL, 0, 0) > 0) {
