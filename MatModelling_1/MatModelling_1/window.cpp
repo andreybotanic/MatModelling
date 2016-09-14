@@ -40,6 +40,20 @@ Window::Window(HINSTANCE hInstance, int nCmdShow, int width, int height, Gdiplus
 
 LRESULT CALLBACK Window::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 	switch (msg) {
+		case WM_CREATE:
+			SetTimer(hwnd, MY_TIMER, interval, NULL);
+			break;
+		case WM_TIMER:
+			if (wParam == MY_TIMER) {
+				if (OnTimerTick) {
+					(*OnTimerTick)(*this);
+				}
+				if (OnResize) {
+					(*OnResize)(*this);
+					g_buffer->DrawImage(bmp, 0, 0, width, height);
+				}
+			}
+			break;
 		case WM_SIZE:
 			ReinitGDI();
 			if (OnResize) {
@@ -99,6 +113,23 @@ void Window::OnResizeFunction(void(*_OnResize)(Window)) {
 		(*OnResize)(*this);
 		g_buffer->DrawImage(bmp, 0, 0, width, height);
 	}
+}
+
+void Window::OnTimerTickFunction(void(*_OnTimerTick)(Window), int i) {
+	OnTimerTick = _OnTimerTick;
+	SetTimer(hwnd, MY_TIMER, i, NULL);
+}
+
+void Window::SetInterval(int i) {
+	SetTimer(hwnd, MY_TIMER, i, NULL);
+}
+
+void Window::TimerStop() {
+	KillTimer(hwnd, MY_TIMER);
+}
+
+void Window::ShowMessage(char * title, char * msg) {
+	MessageBox(hwnd, msg, title, 0);
 }
 
 void Window::SetBackground(Color _color) {

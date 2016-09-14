@@ -25,8 +25,11 @@ private:
 	bool isCreated = false;
 	Bitmap *bmp = new Bitmap(0, 0);
 	Gdiplus::Graphics *g_buffer;
+	UINT_PTR MY_TIMER;
+	int interval = 100;
 	//
 	void (*OnResize)(Window wnd) = NULL;
+	void (*OnTimerTick)(Window wnd) = NULL;
 	//
 	static LRESULT CALLBACK StaticWindowProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam);
 	static LRESULT CALLBACK InitialWindowProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam);
@@ -36,6 +39,10 @@ public:
 	Gdiplus::Graphics *g;
 	Window(HINSTANCE hInstance, int nCmdShow, int width, int height, Gdiplus::Color color, char className[] = "myWindowClass");
 	void OnResizeFunction(void(*_OnResize)(Window));
+	void OnTimerTickFunction(void(*_OnTimerTick)(Window), int i);
+	void SetInterval(int i);
+	void TimerStop();
+	void ShowMessage(char* title, char* msg);
 	void SetBackground(Color _color);
 	Color GetBackground();
 	inline REAL Width() { return width; };

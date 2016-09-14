@@ -1,143 +1,116 @@
 #include "window.h"
 #include <string>
 
-Pen *axisPen, *f1Pen, *f2Pen, *f3Pen, *f4Pen;
-SolidBrush *axisBr;
-PointF axisArrow[3];
+const int turtlesCount = 20;
+float speed = 5;
+float scale = 1;
+PointF turtles[turtlesCount];
+Pen *tPen;
+SolidBrush *tBr;
+int iteration = 0;
+float maxD = 0;
+
 Font *font;
 StringFormat *sf;
 RectF txtPos;
-WCHAR text[5];
-int num_step;
-int min_x = 10, min_y = 5, cnt_x, cnt_y;
-float xO, yO;
-float scale = 20;
-int pointsPerStep = 2;
+WCHAR text[100];
 
-Pen *p;
-
-float F1(float x) {
-	return sin(x);
+float distance(PointF p1, PointF p2) {
+	return sqrt((p2.X - p1.X)*(p2.X - p1.X) + (p2.Y - p1.Y)*(p2.Y - p1.Y));
 }
 
-float F2(float x) {
-	return cos(x);
+PointF normalize(PointF vec) {
+	float l = sqrt(vec.X*vec.X + vec.Y*vec.Y);
+	return PointF(vec.X / l, vec.Y / l);
 }
 
-float F3(float x) {
-	return -cos(x);
+inline PointF mult(PointF vec, float l) {
+	return PointF(vec.X * l, vec.Y * l);
 }
 
-float F4(float x) {
-	return -sin(x);
+inline PointF add(PointF vec1, PointF vec2) {
+	return PointF(vec1.X + vec2.X, vec1.Y + vec2.Y);
 }
 
-void drawFunc(Window wnd, float (*func)(float), Pen *pen) {
-	float x = 0, y = func(0), x_old = x, y_old = y;
-	float dx = pointsPerStep / scale / num_step;
-	do {
-		x_old = x;
-		y_old = y;
-		x += dx;
-		y = func(x);
-		wnd.g->DrawLine(pen, xO + x_old * scale, yO - y_old * scale, xO + x * scale, yO - y * scale);
-	} while (xO + x * scale <= wnd.Width());
-	x = 0;
-	y = func(0);
-	do {
-		x_old = x;
-		y_old = y;
-		x -= dx;
-		y = func(x);
-		wnd.g->DrawLine(pen, xO + x_old * scale, yO - y_old * scale, xO + x * scale, yO - y * scale);
-	} while (xO + x * scale >= 0);
+void initRandTurtles(Window wnd) {
+	for (int i = 0; i < turtlesCount; i++) {
+		turtles[i].X = rand() % (int)wnd.Width();
+		turtles[i].Y = rand() % (int)wnd.Height();
+	}
 }
 
-void drawAxis(Window wnd) {
-	xO = wnd.Width() / 2;
-	yO = wnd.Height() / 2;
+void initPegularTurtles(Window wnd) {
+	PointF c;
+	c.X = wnd.Width() / 2;
+	c.Y = wnd.Height() / 2;
+	float R = min(c.X, c.Y) - 10;
+	float step = 2 * 3.1415926 / turtlesCount, phi = 0;
+	for (int i = 0; i < turtlesCount; i++, phi += step) {
+		turtles[i].X = R*sin(phi) + c.X;
+		turtles[i].Y = R*cos(phi) + c.Y;
+	}
+}
 
-	wnd.g->DrawLine(axisPen, 10., yO, wnd.Width() - 10., yO);
-	wnd.g->DrawLine(axisPen, xO, 10., xO, wnd.Height() - 10.);
-	axisArrow[0] = { xO, 10 };
-	axisArrow[1] = { xO + 3, 20 };
-	axisArrow[2] = { xO - 3, 20 };
-	wnd.g->FillPolygon(axisBr, axisArrow, 3);
-	axisArrow[0] = { wnd.Width() - 10, yO };
-	axisArrow[1] = { wnd.Width() - 20, yO + 3 };
-	axisArrow[2] = { wnd.Width() - 20, yO  - 3};
-	wnd.g->FillPolygon(axisBr, axisArrow, 3);
+void drawTurtles(Window wnd) {
+	for (int i = 0; i < turtlesCount; i++) {
+		wnd.g->FillEllipse(tBr, turtles[i].X - 2, turtles[i].Y - 2, 5., 5.);
+		wnd.g->DrawEllipse(tPen, turtles[i].X - 2, turtles[i].Y - 2, 5., 5.);
+	}
+}
 
-	float px_step = 20;
-	num_step = 1;
-	if (scale < px_step) {
-		num_step = ceil(px_step / scale);
-		px_step = num_step * scale;
+void step(Window wnd) {
+	PointF vec, deltha;
+	iteration++;
+	for (int i = 0; i < turtlesCount; i++) {
+		vec.X = turtles[(i + 1) % turtlesCount].X - turtles[i].X;
+		vec.Y = turtles[(i + 1) % turtlesCount].Y - turtles[i].Y;
+		deltha = mult(normalize(vec), speed);
+		turtles[i] = add(turtles[i], deltha);
 	}
-	else {
-		px_step = scale;
+	float d;
+	maxD = 0;
+	for (int i = 0; i < turtlesCount; i++) {
+		d = distance(turtles[i], turtles[(i + 1) % turtlesCount]);
+		if (d > maxD)
+			maxD = d;
 	}
-	if (!px_step) {
-		px_step = 1;
+	if (abs(maxD - speed) < 1e-5) {
+		wnd.TimerStop();
+		wnd.ShowMessage("", "Simulation complete!");
 	}
-	cnt_x = (wnd.Width() - 42) / 2 / px_step, cnt_y = (wnd.Height() - 42) / 2 / px_step;
-	if (min_x % num_step == 0 && cnt_x * num_step < min_x) {
-		cnt_x++;
-	}
-	if (min_y % num_step == 0 && cnt_y * num_step < min_y) {
-		cnt_y++;
-	}
-	txtPos.Y = yO + 5;
-	txtPos.Height = 10;
-	txtPos.Width = 20;
-	for (int i = 1; i <= cnt_x; i++) {
-		wnd.g->DrawLine(axisPen, xO + px_step * i, yO - 4, xO + px_step * i, yO + 4);
-		wnd.g->DrawLine(axisPen, xO - px_step * i, yO - 4, xO - px_step * i, yO + 4);
-		txtPos.X = xO + px_step * i - 10;
-		swprintf_s(text, 5, L"%d", i * num_step);
-		wnd.g->DrawString(text, lstrlenW(text), font, txtPos, sf, axisBr);
-		txtPos.X = xO - px_step * i - 10;
-		swprintf_s(text, 5, L"%d", -i * num_step);
-		wnd.g->DrawString(text, lstrlenW(text), font, txtPos, sf, axisBr);
-	}
-	txtPos.X = xO + 5;
-	for (int i = 1; i <= cnt_y; i++) {
-		wnd.g->DrawLine(axisPen, xO - 4, yO + px_step * i, xO + 4, yO + px_step * i);
-		wnd.g->DrawLine(axisPen, xO - 4, yO - px_step * i, xO + 4, yO - px_step * i);
-		txtPos.Y = yO + px_step * i - 5;
-		swprintf_s(text, 5, L"%d", -i * num_step);
-		wnd.g->DrawString(text, lstrlenW(text), font, txtPos, sf, axisBr);
-		txtPos.Y = yO - px_step * i - 5;
-		swprintf_s(text, 5, L"%d", i * num_step);
-		wnd.g->DrawString(text, lstrlenW(text), font, txtPos, sf, axisBr);
-	}
+}
+
+void printInfo(Window wnd) {
+	txtPos.X = 0;
+	txtPos.Y = 0;
+	txtPos.Width = 150;
+	txtPos.Height = 70;
+	swprintf_s(text, 100, L"Count: %d\nSpeed: %f\nIteration: %d\nMax dist: %f", turtlesCount, speed, iteration, maxD);
+	wnd.g->DrawString(text, lstrlenW(text), font, txtPos, sf, &SolidBrush(Color::Black));
 }
 
 void resize(Window wnd) {
-	scale = min((float)(wnd.Width() - 42) / 2 / min_x, (float)(wnd.Height() - 42) / 2 / min_y);
-	drawAxis(wnd);
-	drawFunc(wnd, F1, f1Pen);
-	drawFunc(wnd, F2, f2Pen);
-	drawFunc(wnd, F3, f3Pen);
-	drawFunc(wnd, F4, f4Pen);
+	wnd.g->Clear(Color::White);
+	drawTurtles(wnd);
+	printInfo(wnd);
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR lpCmdLine, int nCmdShow) {
 	MSG Msg;
-	Window myWindow(hInstance, nCmdShow, 300, 300, Color(255, 255, 255));
-	p = new Pen(Color(255, 0, 0), 2);
-	axisPen = new Pen(Color(0, 0, 0), 1);
-	f1Pen = new Pen(Color(255, 0, 0), 2);
-	f2Pen = new Pen(Color(0, 0, 255), 2);
-	f3Pen = new Pen(Color(0, 128, 0), 2);
-	f4Pen = new Pen(Color(255, 128, 0), 2);
-	axisBr = new SolidBrush(Color(0, 0, 0));
+	Window myWindow(hInstance, nCmdShow, 500, 500, Color(255, 255, 255));
+	tPen = new Pen(Color(192, 64, 0), 1.5);
+	tBr = new SolidBrush(Color(0, 128, 0));
+
+	initPegularTurtles(myWindow);
+	//initRandTurtles(myWindow);
+
 	FontFamily fontFamily(L"Arial");
 	font = new Font(&fontFamily, 9, FontStyleRegular, UnitPixel);
 	sf = new StringFormat(0, 0);
-	sf->SetAlignment(StringAlignmentCenter);
+	sf->SetAlignment(StringAlignmentNear);
 
 	myWindow.OnResizeFunction(resize);
+	myWindow.OnTimerTickFunction(step, 20);
 
 	while (GetMessage(&Msg, NULL, 0, 0) > 0) {
 		TranslateMessage(&Msg);
