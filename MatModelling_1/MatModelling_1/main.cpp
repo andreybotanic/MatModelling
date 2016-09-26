@@ -2,8 +2,6 @@
 #include <string>
 #include <time.h>
 
-//#define QUICK
-
 const float G = 9.8;			// m/s^2
 
 class Salut {
@@ -60,20 +58,6 @@ public:
 		scale = 3 / 5.0 * wnd.Height() / bang_h;
 		bang_h -= (rand() % 400) / 10.0;
 		p = new Pen(Color::White, 1);
-		/*int c = rand() % 3;
-		switch (c) {
-		case 0:	//red
-			b = new SolidBrush(Color(255 - rand() % 100, rand() % 200, rand() % 200));
-			break;
-		case 1:	//green
-			b = new SolidBrush(Color(rand() % 200, 255 - rand() % 100, rand() % 200));
-			break;
-		case 2:	//blue
-			b = new SolidBrush(Color(rand() % 200, rand() % 200, 255 - rand() % 100));
-			break;
-		default:
-			b = new SolidBrush(Color(255 - rand() % 200, 255 - rand() % 200, 255 - rand() % 200));
-		*/
 		b = new SolidBrush(Color(HSL(rand() % 360, (rand() % 30) / 100.0 + 0.7, (rand() % 40) / 100.0 + 0.3)));
 		start_pos = { (rand() % int(wnd.Width())) / scale, 0 };
 		float cx = (wnd.Width() / 2) / scale;
@@ -138,13 +122,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR lpCmdLine, int nCmdShow
 	MSG Msg;
 	Window myWindow(hInstance, nCmdShow, 1000, 600, Color::Black);
 	init(myWindow);
-
-#ifdef QUICK
-	myWindow.OnResizeFunction(steps);
-#else
 	myWindow.OnResizeFunction(resize);
 	myWindow.OnTimerTickFunction(step, 50);
-#endif
 	while (GetMessage(&Msg, NULL, 0, 0) > 0) {
 		TranslateMessage(&Msg);
 		DispatchMessage(&Msg);
