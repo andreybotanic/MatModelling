@@ -1,6 +1,6 @@
 #include "window.h"
 
-Window::Window(HINSTANCE hInstance, int nCmdShow, int width, int height, Gdiplus::Color color, char className[]) {
+Window::Window(HINSTANCE hInstance, int nCmdShow, int width, int height, Gdiplus::Color color, char className[]){
 	WNDCLASSEX wc;
 	wc.cbSize = sizeof(WNDCLASSEX);
 	wc.style = 0;

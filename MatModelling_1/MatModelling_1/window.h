@@ -23,7 +23,7 @@ private:
 	Gdiplus::Color color;
 	ULONG_PTR gdiplusToken;
 	bool isCreated = false;
-	Bitmap *bmp = new Bitmap(0, 0);
+	Gdiplus::Bitmap *bmp = new Gdiplus::Bitmap(0, 0);
 	Gdiplus::Graphics *g_buffer;
 	UINT_PTR MY_TIMER;
 	int interval = 100;
