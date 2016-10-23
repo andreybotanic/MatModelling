@@ -1,0 +1,20 @@
+﻿  main.cpp
+e:\разное\проекты\c++\вки\v\matmodelling\matmodelling_1\matmodelling_1\window.h(48): warning C4244: return: преобразование "LONG" в "Gdiplus::REAL", возможна потеря данных
+e:\разное\проекты\c++\вки\v\matmodelling\matmodelling_1\matmodelling_1\window.h(49): warning C4244: return: преобразование "LONG" в "Gdiplus::REAL", возможна потеря данных
+main.cpp(48): warning C4244: аргумент: преобразование "float" в "BYTE", возможна потеря данных
+main.cpp(54): warning C4244: return: преобразование "double" в "float", возможна потеря данных
+main.cpp(56): warning C4244: return: преобразование "double" в "float", возможна потеря данных
+main.cpp(68): warning C4244: аргумент: преобразование "double" в "float", возможна потеря данных
+main.cpp(70): warning C4244: аргумент: преобразование "double" в "float", возможна потеря данных
+main.cpp(72): warning C4244: аргумент: преобразование "float" в "BYTE", возможна потеря данных
+main.cpp(83): warning C4244: аргумент: преобразование "Gdiplus::REAL" в "INT", возможна потеря данных
+main.cpp(138): warning C4244: =: преобразование "double" в "float", возможна потеря данных
+main.cpp(87): warning C4101: value: неиспользованная локальная переменная
+main.cpp(88): warning C4101: tmp: неиспользованная локальная переменная
+  Создание кода
+  Создание кода завершено
+  1 of 201 functions ( 0.5%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    1 functions had inline decision re-evaluated but remain unchanged
+  MatModelling_1.vcxproj -> E:\Разное\Проекты\C++\ВКИ\V\MatModelling\MatModelling_1\Release\MatModelling_1.exe
+  MatModelling_1.vcxproj -> E:\Разное\Проекты\C++\ВКИ\V\MatModelling\MatModelling_1\Release\MatModelling_1.pdb (Full PDB)
